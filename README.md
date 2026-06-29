@@ -22,56 +22,26 @@ Support teams using AI are bleeding money on operational costs:
 
 TriageFlow analyzes incoming emails, categorizes them intelligently, and **dynamically routes to optimized models** as performance data accumulates.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  📧 INCOMING EMAIL                                      │
-│  "I can't reset my password, help!"                     │
-└────────────────────┬────────────────────────────────────┘
-                     │
-                     ▼
-        ┌────────────────────────┐
-        │  🧠 CATEGORIZATION     │
-        │  → TECHNICAL ISSUE     │
-        └────────────┬───────────┘
-                     │
-                     ▼
-        ┌────────────────────────────────────┐
-        │  📊 CHECK LEARNING DATABASE        │
-        │  "We've solved TECHNICAL before"   │
-        └────────────┬───────────────────────┘
-                     │
-              ┌──────┴──────┐
-              │             │
-         COLD START    WARM STATE
-         (First 20)    (After 20)
-              │             │
-              ▼             ▼
-        ┌─────────┐   ┌─────────────────┐
-        │ Claude  │   │ GLM 5.2 or      │
-        │ Premium │   │ Gemini (Proven) │
-        │ Model   │   │ 10x Cheaper     │
-        └────┬────┘   └────┬────────────┘
-             │             │
-             └──────┬──────┘
-                    ▼
-        ┌────────────────────────┐
-        │  ✅ RESPONSE GENERATED │
-        │  Quality: 96%+         │
-        └────────────┬───────────┘
-                     │
-                     ▼
-        ┌──────────────────────────┐
-        │  💾 LOG & UPDATE PATTERN │
-        │  Model X for TECHNICAL   │
-        │  Avg cost: 50 tokens     │
-        └────────────┬─────────────┘
-                     │
-                     ▼
-        ┌──────────────────────────┐
-        │  💰 RESULT               │
-        │  70-80% COST SAVINGS     │
-        │  Same Quality Output     │
-        └──────────────────────────┘
+```mermaid
+flowchart TD
+    A[📧 Incoming Email\n'I cant reset my password'] --> B[🧠 Categorize Email]
+    B --> C{📊 Check Learning DB\nPattern exists?}
+
+    C -->|No pattern yet\nCold Start| D[🔵 Premium Model\nClaude / Gemini]
+    C -->|Pattern found\nWarm State| E[🟢 Optimized Model\nCheapest proven option]
+
+    D --> F[✅ Generate Response\nQuality: 96%+]
+    E --> F
+
+    F --> G[💾 Log Result\nModel · Tokens · Time]
+    G --> H[📈 Update Pattern\nCategory → Best Model]
+    H --> I[💰 70-80% Cost Savings\nSame Quality Output]
+    I -.->|Next similar email| C
+
+    style A fill:#1e293b,color:#fff
+    style I fill:#166534,color:#fff
+    style D fill:#1e40af,color:#fff
+    style E fill:#14532d,color:#fff
 ```
 
 ---
@@ -92,9 +62,17 @@ TriageFlow analyzes incoming emails, categorizes them intelligently, and **dynam
 - **Sustained Savings:** 87% cost reduction
 - **Quality Maintained:** 96% response accuracy vs premium baseline
 
----
+### Token Cost Over Time (Self-Learning Effect)
 
-## How It Works
+```mermaid
+xychart-beta
+    title "Avg Tokens Per Email as TriageFlow Learns"
+    x-axis ["Email 1", "Email 10", "Email 20", "Email 30", "Email 50", "Email 100"]
+    y-axis "Tokens Used" 0 --> 500
+    line [485, 420, 300, 180, 90, 62]
+```
+
+---
 
 TriageFlow learns category-to-model performance mappings over time:
 
@@ -118,29 +96,38 @@ FEEDBACK → Mistral/Llama (92% success, free tier)
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Models Layer                         │
-│  ANY LLM with API Access = Ready to Go                 │
-│  ├── Premium (Claude, GPT-4o, Gemini, etc)             │
-│  ├── Free APIs (Mistral, Llama via OpenRouter, etc)    │
-│  └── Locally-Hosted (Ollama, vLLM, LM Studio, etc)     │
-│                                                          │
-│  🔑 Bring your own model. Or use free ones.            │
-└────────────────────┬────────────────────────────────────┘
-                     │
-┌────────────────────┴────────────────────────────────────┐
-│                  Triage Engine                          │
-│  ├── Email categorization                              │
-│  ├── Response generation                               │
-│  └── Cost-optimized routing (any model)                │
-└────────────────────┬────────────────────────────────────┘
-                     │
-┌────────────────────┴────────────────────────────────────┐
-│               Persistence Layer                         │
-│  ├── Transaction logs (tokens, latency, cost)          │
-│  └── Category-to-model performance mapping             │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph Models["🤖 Models Layer — Bring Any Model"]
+        M1[☁️ Premium\nClaude · GPT-4o · Gemini]
+        M2[🆓 Free APIs\nOpenRouter · Mistral · Llama]
+        M3[💻 Local / Self-Hosted\nOllama · LM Studio · vLLM]
+    end
+
+    subgraph Engine["⚙️ Triage Engine"]
+        E1[📬 Email Categorizer]
+        E2[💬 Response Generator]
+        E3[🔀 Cost-Optimized Router]
+    end
+
+    subgraph DB["💾 Persistence Layer"]
+        D1[📋 Transaction Logs\nTokens · Latency · Cost]
+        D2[🧠 Pattern Ledger\nCategory → Best Model]
+    end
+
+    User([👤 User]) --> E1
+    E1 --> E3
+    E3 --> M1
+    E3 --> M2
+    E3 --> M3
+    M1 & M2 & M3 --> E2
+    E2 --> D1
+    D1 --> D2
+    D2 -->|Learns over time| E3
+
+    style Models fill:#1e293b,color:#fff
+    style Engine fill:#1e3a5f,color:#fff
+    style DB fill:#14532d,color:#fff
 ```
 
 ---
@@ -281,21 +268,26 @@ Each run improves the mappings.
 
 ## Roadmap
 
-**Phase 1 (Now):** Local MVP with learning ✓
-**Phase 2 (Q3):**
-- [ ] Web dashboard (real-time ROI tracking)
-- [ ] Telegram/Slack bot interface
-- [ ] Batch email processing
-
-**Phase 3 (Q4):**
-- [ ] BYOK (Bring Your Own Keys) multi-tenant support
-- [ ] Zendesk/Intercom integrations
-- [ ] Custom category fine-tuning
-
-**Phase 4 (2027):**
-- [ ] SaaS product ($999/month)
-- [ ] Automated A/B testing for response quality
-- [ ] Advanced analytics dashboard
+```mermaid
+timeline
+    title TriageFlow Roadmap
+    section Phase 1 — Now ✓
+        Local MVP        : Email categorization
+                         : Multi-model routing
+                         : Pattern learning DB
+    section Phase 2 — Q3 2026
+        Interfaces       : Web dashboard
+                         : Telegram & Slack bot
+                         : Batch processing
+    section Phase 3 — Q4 2026
+        Enterprise       : BYOK multi-tenant
+                         : Zendesk & Intercom
+                         : Custom categories
+    section Phase 4 — 2027
+        SaaS Product     : $999/month tier
+                         : A/B testing engine
+                         : Advanced analytics
+```
 
 ---
 
