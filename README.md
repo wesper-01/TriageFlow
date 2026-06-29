@@ -20,61 +20,9 @@ Support teams using AI are bleeding money on operational costs:
 
 ## The Solution
 
-TriageFlow analyzes incoming emails, categorizes them intelligently, and **dynamically routes to optimized models** as performance data accumulates.
+TriageFlow analyzes incoming emails, categorizes them intelligently, and dynamically routes to optimized models as performance data accumulates.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  📧 INCOMING EMAIL                                      │
-│  "I can't reset my password, help!"                     │
-└────────────────────┬────────────────────────────────────┘
-                     │
-                     ▼
-        ┌────────────────────────┐
-        │  🧠 CATEGORIZATION     │
-        │  → TECHNICAL ISSUE     │
-        └────────────┬───────────┘
-                     │
-                     ▼
-        ┌────────────────────────────────────┐
-        │  📊 CHECK LEARNING DATABASE        │
-        │  "We've solved TECHNICAL before"   │
-        └────────────┬───────────────────────┘
-                     │
-              ┌──────┴──────┐
-              │             │
-         COLD START    WARM STATE
-         (First 20)    (After 20)
-              │             │
-              ▼             ▼
-        ┌─────────┐   ┌─────────────────┐
-        │ Claude  │   │ GLM 5.2 or      │
-        │ Premium │   │ Gemini (Proven) │
-        │ Model   │   │ 10x Cheaper     │
-        └────┬────┘   └────┬────────────┘
-             │             │
-             └──────┬──────┘
-                    ▼
-        ┌────────────────────────┐
-        │  ✅ RESPONSE GENERATED │
-        │  Quality: 96%+         │
-        └────────────┬───────────┘
-                     │
-                     ▼
-        ┌──────────────────────────┐
-        │  💾 LOG & UPDATE PATTERN │
-        │  Model X for TECHNICAL   │
-        │  Avg cost: 50 tokens     │
-        └────────────┬─────────────┘
-                     │
-                     ▼
-        ┌──────────────────────────┐
-        │  💰 RESULT               │
-        │  70-80% COST SAVINGS     │
-        │  Same Quality Output     │
-        └──────────────────────────┘
-```
-
----
+![TriageFlow Core Solution Flowchart](path/to/triageflow_core_flowchart.png)
 
 ## Real Numbers
 
@@ -118,53 +66,19 @@ FEEDBACK → Mistral/Llama (92% success, free tier)
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Models Layer                         │
-│  ANY LLM with API Access = Ready to Go                 │
-│  ├── Premium (Claude, GPT-4o, Gemini, etc)             │
-│  ├── Free APIs (Mistral, Llama via OpenRouter, etc)    │
-│  └── Locally-Hosted (Ollama, vLLM, LM Studio, etc)     │
-│                                                          │
-│  🔑 Bring your own model. Or use free ones.            │
-└────────────────────┬────────────────────────────────────┘
-                     │
-┌────────────────────┴────────────────────────────────────┐
-│                  Triage Engine                          │
-│  ├── Email categorization                              │
-│  ├── Response generation                               │
-│  └── Cost-optimized routing (any model)                │
-└────────────────────┬────────────────────────────────────┘
-                     │
-┌────────────────────┴────────────────────────────────────┐
-│               Persistence Layer                         │
-│  ├── Transaction logs (tokens, latency, cost)          │
-│  └── Category-to-model performance mapping             │
-└─────────────────────────────────────────────────────────┘
-```
+TriageFlow is built with a modular, three-layer stack that ensures flexibility and data persistence.
 
----
+![TriageFlow Modular Architecture Diagram](path/to/triageflow_architecture_diagram.png)
 
-## Quick Start
-
-### Prerequisites
-- Python 3.9+
-- API keys (free tiers available for all)
-
-### Installation
-
-```bash
 # Clone repository
 git clone https://github.com/yourusername/triageflow.git
 cd triageflow
 
-# Setup environment
-python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+# Setup environment and configuration
+![TriageFlow Installation and Config Graphic](path/to/triageflow_installation_graphic.png)
 
-# Install dependencies
+# Run dependencies installation
 pip install -r requirements.txt
-```
 
 ### Configure API Keys
 
