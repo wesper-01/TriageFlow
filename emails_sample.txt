@@ -1,10 +1,10 @@
-I've been trying to reset my password for 3 days and nothing works! Please help urgently.
-Your product is amazing! Just wanted to say thanks for the great experience.
-How much does the premium plan cost? Can I get a discount if I commit for a year?
-The API keeps returning 500 errors when I try to sync data from our CRM.
-I'd love to see a feature that lets us batch process uploads instead of one-by-one.
-My subscription renewed yesterday but I was supposed to cancel. I need a refund immediately.
-Quick question - what's the difference between the Pro and Enterprise plans?
-The dashboard is loading extremely slowly today, is there an outage?
-Just wanted to let you know that your customer support team is exceptional!
-Can I integrate your API with Zapier?
+I've been trying to reset my password for 3 days and nothing works. Extremely frustrated!
+Your product is honestly amazing. Best SaaS tool I've used in years. Keep it up!
+How much does the premium plan cost? Is there an annual discount?
+The API keeps returning 500 errors every time I try to sync data from our CRM. Need urgent help.
+It would be really helpful if you could add a bulk CSV export feature to the dashboard.
+My subscription renewed yesterday but I had already requested cancellation. I need a full refund.
+Quick question - what is the difference between the Pro and Enterprise plans in terms of API limits?
+The dashboard has been loading very slowly for the past 2 hours. Is there an outage?
+Just wanted to say your customer support team has been exceptional. Very grateful!
+Can your API integrate with Zapier or Make for automation workflows?

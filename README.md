@@ -22,18 +22,56 @@ Support teams using AI are bleeding money on operational costs:
 
 TriageFlow analyzes incoming emails, categorizes them intelligently, and **dynamically routes to optimized models** as performance data accumulates.
 
-```text
-📧 Email Arrives
-    ↓
-🧠 Smart Categorization
-    ↓
-📊 Check Performance Database
-    ↓
-🤖 Route to Best Model (Not Most Expensive)
-    ↓
-💾 Log Results & Learn
-    ↓
-💰 70-80% Token Savings
+```
+┌─────────────────────────────────────────────────────────┐
+│  📧 INCOMING EMAIL                                      │
+│  "I can't reset my password, help!"                     │
+└────────────────────┬────────────────────────────────────┘
+                     │
+                     ▼
+        ┌────────────────────────┐
+        │  🧠 CATEGORIZATION     │
+        │  → TECHNICAL ISSUE     │
+        └────────────┬───────────┘
+                     │
+                     ▼
+        ┌────────────────────────────────────┐
+        │  📊 CHECK LEARNING DATABASE        │
+        │  "We've solved TECHNICAL before"   │
+        └────────────┬───────────────────────┘
+                     │
+              ┌──────┴──────┐
+              │             │
+         COLD START    WARM STATE
+         (First 20)    (After 20)
+              │             │
+              ▼             ▼
+        ┌─────────┐   ┌─────────────────┐
+        │ Claude  │   │ GLM 5.2 or      │
+        │ Premium │   │ Gemini (Proven) │
+        │ Model   │   │ 10x Cheaper     │
+        └────┬────┘   └────┬────────────┘
+             │             │
+             └──────┬──────┘
+                    ▼
+        ┌────────────────────────┐
+        │  ✅ RESPONSE GENERATED │
+        │  Quality: 96%+         │
+        └────────────┬───────────┘
+                     │
+                     ▼
+        ┌──────────────────────────┐
+        │  💾 LOG & UPDATE PATTERN │
+        │  Model X for TECHNICAL   │
+        │  Avg cost: 50 tokens     │
+        └────────────┬─────────────┘
+                     │
+                     ▼
+        ┌──────────────────────────┐
+        │  💰 RESULT               │
+        │  70-80% COST SAVINGS     │
+        │  Same Quality Output     │
+        └──────────────────────────┘
 ```
 
 ---
@@ -70,7 +108,7 @@ FEEDBACK → Claude (gather data)
 **Warm State (Emails 21+):**
 ```
 TECHNICAL issue → Claude (98% success, keep premium)
-BILLING issue → Gemini/GLM (87% success, 10x cheaper)
+BILLING issue → Cheaper model of your choice (87% success, 10x cheaper)
 FEEDBACK → Mistral/Llama (92% success, free tier)
 ```
 
@@ -83,16 +121,19 @@ FEEDBACK → Mistral/Llama (92% success, free tier)
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    Models Layer                         │
-│  ├── Claude (High-reasoning anchor)                     │
-│  ├── Gemini (Balanced mid-tier)                         │
-│  └── OpenRouter (Free/cheap OSS models)                 │
+│  ANY LLM with API Access = Ready to Go                 │
+│  ├── Premium (Claude, GPT-4o, Gemini, etc)             │
+│  ├── Free APIs (Mistral, Llama via OpenRouter, etc)    │
+│  └── Locally-Hosted (Ollama, vLLM, LM Studio, etc)     │
+│                                                          │
+│  🔑 Bring your own model. Or use free ones.            │
 └────────────────────┬────────────────────────────────────┘
                      │
 ┌────────────────────┴────────────────────────────────────┐
 │                  Triage Engine                          │
 │  ├── Email categorization                              │
 │  ├── Response generation                               │
-│  └── Cost-optimized routing                            │
+│  └── Cost-optimized routing (any model)                │
 └────────────────────┬────────────────────────────────────┘
                      │
 ┌────────────────────┴────────────────────────────────────┐
@@ -127,21 +168,36 @@ pip install -r requirements.txt
 
 ### Configure API Keys
 
+**TriageFlow works with ANY model that has an API.**
+
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` with your API keys:
+Edit `.env` with your choice of models:
+
 ```env
+# Option 1: Use Premium APIs
 ANTHROPIC_API_KEY=sk-ant-...          # Claude
 GOOGLE_API_KEY=AIzaSy...              # Gemini
-OPENROUTER_API_KEY=sk-or-...          # Free models
+
+# Option 2: Use Free/Cheap APIs
+OPENROUTER_API_KEY=sk-or-...          # Free models (Mistral, Llama, etc)
+
+# Option 3: Use Locally-Hosted Models
+LOCAL_LLM_URL=http://localhost:8000   # Ollama, vLLM, LM Studio, etc
+
+# Mix & Match: Use multiple providers
+# TriageFlow learns which is best for each category
 ```
 
-**Get free keys:**
-- Claude: https://console.anthropic.com/ (free tier)
-- Gemini: https://makersuite.google.com/app/apikey (free tier)
-- OpenRouter: https://openrouter.ai/keys (free models available)
+**Popular Free/Local Options:**
+- **Ollama:** Run Llama 2, Mistral locally (free, zero cost)
+- **LM Studio:** GUI for local models (free, easy setup)
+- **vLLM:** High-performance local inference (free, fast)
+- **OpenRouter:** Access 50+ models pay-per-token (dirt cheap)
+
+**Don't have API keys?** Use completely free local models with Ollama or LM Studio. Zero cost, zero tokens tracked remotely.
 
 ### Run It
 
@@ -162,7 +218,28 @@ python main.py
 
 ---
 
-## Use Cases
+## Model Flexibility: Use What Works for You
+
+**The core insight:** Different emails need different models. TriageFlow learns which model is best for each category and routes automatically.
+
+**You decide what models to use:**
+
+| Scenario | Models | Cost | Setup Time |
+|----------|--------|------|------------|
+| **Enterprise (Full Control)** | Claude + Gemini + OpenRouter | $0-20/mo | 5 min |
+| **Budget (Free APIs)** | OpenRouter free tier + Mistral | $0 | 5 min |
+| **Local Only (Zero Cost)** | Ollama (Llama 2) + LM Studio | $0 | 15 min |
+| **Hybrid (Best of Both)** | Local cheap + Cloud for complex | $0-5/mo | 20 min |
+
+**Even with completely free/local models, you get:**
+- ✅ 70-80% token savings (from learning routing)
+- ✅ Automatic model selection per category
+- ✅ Performance tracking & optimization
+- ✅ Zero vendor lock-in
+
+Pick your provider. TriageFlow learns the rest.
+
+---
 
 - **SaaS Support Teams** – Cut support AI costs 80%
 - **E-Commerce** – Automate order/refund inquiries at scale
