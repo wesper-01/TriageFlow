@@ -90,14 +90,6 @@ CUSTOM_CATEGORY: Your description
 ### Add More Models
 Edit `models.py` to add support for more API providers (Anthropic, Groq, etc.)
 
-## MVP to SaaS
-
-**Next steps after testing:**
-1. Add Telegram bot interface (users send emails via chat)
-2. Add web dashboard (show stats, patterns, ROI)
-3. Add BYOK (customers bring their own API keys)
-4. Deploy on DigitalOcean ($5/month)
-5. Start charging $299-999/month
 
 ## Token Savings Calculation
 
