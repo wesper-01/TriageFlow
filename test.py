@@ -43,7 +43,7 @@ def main():
         sys.exit(1)
 
     with open(email_file, "r") as f:
-        emails = [line.strip() for line in f.readlines() if line.strip()]
+        emails = [line.strip() for line in f.readlines() if line.strip()][:25]
 
     print(f"\n[+] Loaded {len(emails)} emails")
 

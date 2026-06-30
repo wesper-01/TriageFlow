@@ -15,7 +15,7 @@ import requests
 import providers as P
 
 
-def _ping_openai_compatible(base_url, api_key, model_name, extra_headers=None, timeout=10):
+def _ping_openai_compatible(base_url, api_key, model_name, extra_headers=None, extra_payload=None, timeout=30):
     """Send a 1-token request to confirm the model actually responds."""
     headers = {"Content-Type": "application/json"}
     if api_key:
@@ -27,6 +27,8 @@ def _ping_openai_compatible(base_url, api_key, model_name, extra_headers=None, t
         "messages": [{"role": "user", "content": "hi"}],
         "max_tokens": 1,
     }
+    if extra_payload:
+        payload.update(extra_payload)
     try:
         r = requests.post(f"{base_url}/chat/completions",
                            headers=headers, json=payload, timeout=timeout)
@@ -66,7 +68,7 @@ def _ping_gemini(api_key, model_name, base_url, timeout=10):
         return False, str(e)[:120]
 
 
-def ping_provider_model(provider_id, model_name, timeout=10):
+def ping_provider_model(provider_id, model_name, timeout=30):
     """Returns (ok: bool, error: str|None)"""
     p = P.PROVIDERS[provider_id]
     kind = p["kind"]
@@ -75,7 +77,8 @@ def ping_provider_model(provider_id, model_name, timeout=10):
 
     if kind == "openai_compatible":
         extra_headers = p.get("extra_headers", {})
-        return _ping_openai_compatible(base_url, api_key, model_name, extra_headers, timeout)
+        extra_payload = p.get("extra_payload", {})
+        return _ping_openai_compatible(base_url, api_key, model_name, extra_headers, extra_payload, timeout)
     elif kind == "anthropic":
         return _ping_anthropic(api_key, model_name, timeout)
     elif kind == "gemini":
@@ -99,7 +102,7 @@ def ping_provider_model(provider_id, model_name, timeout=10):
     return False, "unknown provider kind"
 
 
-def discover_working_models(verbose=True, priority=None, timeout=8):
+def discover_working_models(verbose=True, priority=None, timeout=30):
     """
     Probe every configured provider's candidate models in priority order.
     Stops at the FIRST working model per provider (no need to test all
@@ -127,20 +130,23 @@ def discover_working_models(verbose=True, priority=None, timeout=8):
         candidates = P.get_candidate_models(provider_id)
         found = False
         last_err = None
+        start_time = time.time()
 
         for model_name in candidates:
             ok, err = ping_provider_model(provider_id, model_name, timeout=timeout)
             if ok:
+                latency = time.time() - start_time
                 found = True
                 working.append({
                     "provider": provider_id,
                     "model": model_name,
                     "label": p["label"],
                     "free": p["free"],
+                    "latency": latency,
                 })
                 tag = "FREE" if p["free"] else "PAID"
                 if verbose:
-                    print(f"  [\u2713] {p['label']:<20} {model_name:<40} [{tag}]")
+                    print(f"  [OK] {p['label']:<20} {model_name:<40} [{tag}] ({latency*1000:.0f}ms)")
                 break
             else:
                 last_err = err
@@ -148,6 +154,8 @@ def discover_working_models(verbose=True, priority=None, timeout=8):
         if not found and verbose:
             print(f"  [x] {p['label']:<20} no working model "
                   f"({last_err or 'all candidates failed'})")
+
+    working.sort(key=lambda x: x["latency"])
 
     if verbose:
         free_count = sum(1 for w in working if w["free"])

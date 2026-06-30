@@ -1,0 +1,20 @@
+# Environments
+.env
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Database
+*.db
+triage_results.db
+
+# Test Outputs
+results.csv
+test_nvidia.py
+wait_for_nvidia.py
+
+# Editor files
+.vscode/
+.idea/
+*.swp

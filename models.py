@@ -16,6 +16,15 @@ load_dotenv()
 
 CATEGORIES = ["BILLING", "TECHNICAL", "FEATURE_REQUEST", "FEEDBACK", "GENERAL_INQUIRY"]
 
+# Hard ceiling on any single API call during a real triage run (seconds)
+API_CALL_TIMEOUT = int(os.getenv("TRIAGEFLOW_TIMEOUT", "25"))
+
+# Errors we recognise as "this provider failed" — used for clean log suppression
+_ERROR_PREFIXES = ("API Error", "Ollama Error", "Error:")
+
+# How many times we silently swallow a repeated error before showing it again
+_ERROR_REPEAT_SUPPRESS = 5
+
 
 class TriageModel:
     def __init__(self, provider_id, model_name, label=None, free=True):
@@ -33,6 +42,7 @@ class TriageModel:
         self.extra_headers = P.get_extra_headers(provider_id)
         self.tokens_used = 0
         self.api_connected = True  # assumed pre-verified by health_check
+        self._error_counts: dict[str, int] = {}  # tracks repeated identical errors
 
     # ------------------------------------------------------------------
     # Public triage methods
@@ -83,6 +93,15 @@ class TriageModel:
     # Internal routing
     # ------------------------------------------------------------------
 
+    def _log_error(self, error_msg: str):
+        """Print an error, but suppress repetitions to keep logs readable."""
+        count = self._error_counts.get(error_msg, 0) + 1
+        self._error_counts[error_msg] = count
+        if count == 1:
+            print(f"  [!] {self.label}: {error_msg}")
+        elif count % _ERROR_REPEAT_SUPPRESS == 0:
+            print(f"  [!] {self.label}: {error_msg} (x{count} times)")
+
     def _call_api(self, system_prompt, user_message, max_tokens=150):
         try:
             if self.kind == "anthropic":
@@ -91,12 +110,18 @@ class TriageModel:
                 return self._call_gemini(system_prompt, user_message, max_tokens)
             elif self.kind == "ollama":
                 return self._call_ollama(system_prompt, user_message, max_tokens)
-            else:  # openai_compatible (groq, cerebras, openrouter, openai, lmstudio)
+            else:  # openai_compatible
                 return self._call_openai_compatible(system_prompt, user_message, max_tokens)
-        except Exception as e:
-            error_msg = f"Error: {str(e)[:60]}"
+        except requests.exceptions.Timeout:
+            error_msg = f"timed out after {API_CALL_TIMEOUT}s"
+            self._log_error(error_msg)
             estimated = len(user_message.split()) + len(system_prompt.split())
-            return error_msg, estimated
+            return f"Error: {error_msg}", estimated
+        except Exception as e:
+            error_msg = str(e)[:80]
+            self._log_error(error_msg)
+            estimated = len(user_message.split()) + len(system_prompt.split())
+            return f"Error: {error_msg}", estimated
 
     def _call_openai_compatible(self, system_prompt, user_message, max_tokens):
         headers = {"Content-Type": "application/json"}
@@ -112,7 +137,7 @@ class TriageModel:
             "max_tokens": max_tokens,
         }
         r = requests.post(f"{self.base_url}/chat/completions",
-                           headers=headers, json=data, timeout=30)
+                           headers=headers, json=data, timeout=API_CALL_TIMEOUT)
         if r.status_code == 200:
             result = r.json()
             usage = result.get("usage", {})
@@ -120,9 +145,10 @@ class TriageModel:
             text = result["choices"][0]["message"]["content"].strip()
             return text, tokens
         else:
-            error = f"API Error {r.status_code}"
+            error = f"HTTP {r.status_code}"
+            self._log_error(error)
             estimated = len(user_message.split()) + max_tokens
-            return error, estimated
+            return f"API Error {r.status_code}", estimated
 
     def _call_anthropic(self, system_prompt, user_message, max_tokens):
         import anthropic
@@ -143,16 +169,16 @@ class TriageModel:
             "contents": [{"parts": [{"text": f"{system_prompt}\n\nEmail: {user_message}"}]}],
             "generationConfig": {"maxOutputTokens": max_tokens},
         }
-        r = requests.post(url, json=payload, timeout=30)
+        r = requests.post(url, json=payload, timeout=API_CALL_TIMEOUT)
         if r.status_code == 200:
             result = r.json()
             text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
             tokens = len(user_message.split()) + len(text.split()) + 50
             return text, tokens
         else:
-            error = f"API Error {r.status_code}"
+            self._log_error(f"HTTP {r.status_code}")
             estimated = len(user_message.split()) + max_tokens
-            return error, estimated
+            return f"API Error {r.status_code}", estimated
 
     def _call_ollama(self, system_prompt, user_message, max_tokens):
         data = {
@@ -163,13 +189,13 @@ class TriageModel:
             ],
             "stream": False,
         }
-        r = requests.post(f"{self.base_url}/api/chat", json=data, timeout=60)
+        r = requests.post(f"{self.base_url}/api/chat", json=data, timeout=API_CALL_TIMEOUT)
         if r.status_code == 200:
             result = r.json()
             content = result.get("message", {}).get("content", "")
             tokens = len(user_message.split()) + len(content.split())
             return content.strip(), tokens
         else:
-            error = f"Ollama Error: {r.status_code}"
+            self._log_error(f"HTTP {r.status_code}")
             estimated = len(user_message.split()) + 50
-            return error, estimated
+            return f"Ollama Error: {r.status_code}", estimated

@@ -29,7 +29,7 @@ A single dictionary, `PROVIDERS`, describing every AI backend TriageFlow knows a
 - `models` is an ordered list of candidate model ids — first one that passes a live ping wins.
 - `free` flags whether usage of this provider should count toward cost in reports.
 
-`DEFAULT_PRIORITY` controls the order providers are tried in: local providers (Ollama, LM Studio) first since they're unlimited and free, then fast hosted free tiers (Groq, Cerebras), then OpenRouter/Gemini, with paid providers (OpenAI, Claude) last.
+`DEFAULT_PRIORITY` is defined as a static fallback list, but `health_check.py` now **dynamically measures latency** (in milliseconds) for each model during the ping. The models are automatically sorted by this latency, meaning TriageFlow always prefers the absolute fastest local or free tier available at runtime.
 
 ---
 
@@ -37,10 +37,11 @@ A single dictionary, `PROVIDERS`, describing every AI backend TriageFlow knows a
 
 Before TriageFlow routes a single email, `discover_working_models()`:
 
-1. For each provider in priority order, checks if it's configured (has a key, or is local).
-2. For each candidate model of that provider, sends a real 1-token chat completion.
-3. Stops at the first model that returns HTTP 200 — that's the model used for that provider this run.
-4. If none of a provider's candidates work, reports why (auth error, 404, connection refused, timeout) and moves on.
+1. For each provider, checks if it's configured (has a key, or is local).
+2. For each candidate model of that provider, sends a real 10-token chat completion (to prevent hanging on some models).
+3. Stops at the first model that returns HTTP 200 and explicitly records the API response time (latency).
+4. Sorts all successfully verified models by their measured latency.
+5. If none of a provider's candidates work, reports why (auth error, 404, connection refused, timeout) and moves on.
 
 This is the fix for the most common failure mode in naive multi-provider tools: a valid API key paired with a stale/wrong/paid-only model id, which silently 404s deep into a batch run instead of failing fast and clearly.
 

@@ -55,8 +55,10 @@ python health_check.py
 You should see something like:
 
 ```
-[✓] Groq    llama-3.1-8b-instant   [FREE]
-2 model(s) ready (2 free, 0 paid)
+[OK] Groq                 llama-3.1-8b-instant                     [FREE] (645ms)
+[OK] NVIDIA (DeepSeek)    qwen/qwen3.5-122b-a10b                   [PAID] (1234ms)
+----------------------------------------------------------------------
+  2 model(s) ready  (1 free, 1 paid)
 ```
 
 If you instead see `[x]` with an error, read the error message — it tells you exactly what failed (wrong key, model not found, rate limited, etc).

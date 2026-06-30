@@ -7,6 +7,9 @@ Works with any model (premium, free API, or local)
 
 import providers as P
 
+# How many consecutive failures before a provider is sidelined mid-batch
+_FAILURE_THRESHOLD = 3
+
 
 class EmailTriage:
     def __init__(self, database, models):
@@ -14,11 +17,14 @@ class EmailTriage:
         self.models = models  # Dict: provider_id -> TriageModel (pre-verified working)
         self.results = []
 
-        # Priority order for picking a model when no learned pattern exists.
-        # Free/local providers first so the system defaults to $0 cost.
-        self.priority_order = list(P.DEFAULT_PRIORITY)
+        # Use the dynamic priority order from health_check (sorted by latency)
+        self.priority_order = list(self.models.keys())
         self.free_models = [pid for pid in self.models if self.models[pid].free]
         self.paid_models = [pid for pid in self.models if not self.models[pid].free]
+
+        # Mid-run fallback tracking: consecutive failure counts per provider
+        self._failure_counts: dict[str, int] = {pid: 0 for pid in self.models}
+        self._sidelined: set[str] = set()
 
     def process_emails(self, emails):
         """Process a batch of emails"""
@@ -28,25 +34,84 @@ class EmailTriage:
             self.results.append(result)
         return self.results
 
+    def _record_outcome(self, provider_id: str, success: bool):
+        """Track consecutive failures; sideline a provider that keeps failing."""
+        if success:
+            self._failure_counts[provider_id] = 0
+            self._sidelined.discard(provider_id)
+        else:
+            self._failure_counts[provider_id] = self._failure_counts.get(provider_id, 0) + 1
+            if self._failure_counts[provider_id] >= _FAILURE_THRESHOLD:
+                if provider_id not in self._sidelined:
+                    print(f"  [!] {provider_id} sidelined mid-batch after "
+                          f"{_FAILURE_THRESHOLD} consecutive failures — falling back")
+                    self._sidelined.add(provider_id)
+
+    def _active_models(self):
+        """Return priority-ordered list of provider_ids that aren't sidelined."""
+        return [pid for pid in self.priority_order if pid not in self._sidelined]
+
+    def _call_with_fallback(self, call_fn, providers_to_try):
+        """
+        Try call_fn(provider_id) across providers_to_try in order.
+        If all fail, sleep and retry up to 3 times before raising RuntimeError.
+        """
+        import time
+        max_retries = 3
+        for attempt in range(max_retries):
+            for pid in providers_to_try:
+                if pid not in self.models or pid in self._sidelined:
+                    continue
+                result = call_fn(pid)
+                text = result[0] if isinstance(result, tuple) else result
+                if not str(text).startswith(("Error", "API Error", "Ollama Error")):
+                    self._record_outcome(pid, success=True)
+                    return result, pid
+                self._record_outcome(pid, success=False)
+            
+            if attempt < max_retries - 1:
+                print(f"  [!] Exhausted providers on attempt {attempt+1}/{max_retries}. Sleeping 5s before retry...")
+                time.sleep(5)
+                # Un-sideline everyone for the retry
+                self._sidelined.clear()
+                for p in self._failure_counts:
+                    self._failure_counts[p] = 0
+                
+        raise RuntimeError("All available providers failed for this email after retries.")
+
     def process_single_email(self, email_text):
         """Process a single email through triage"""
+        active = self._active_models()
+        if not active:
+            # Reset sidelined set and try again (all providers may have recovered)
+            self._sidelined.clear()
+            self._failure_counts = {pid: 0 for pid in self.models}
+            active = list(self.priority_order)
 
-        # Step 1: Pick best model for categorization
-        # Use most reliable available model first time
-        category_model_name = self._get_reliable_model()
-        category_model = self.models[category_model_name]
+        # Step 1: Pick best model for categorization (paid preferred, then free)
+        paid_active = [p for p in active if p in self.paid_models]
+        free_active  = [p for p in active if p in self.free_models]
+        cat_order = (paid_active or free_active) + [p for p in active if p not in (paid_active + free_active)]
 
-        # Step 2: Categorize
-        category, tokens_cat, time_cat = category_model.categorize_email(email_text)
+        (category, tokens_cat, time_cat), category_model_name = self._call_with_fallback(
+            lambda pid: self.models[pid].categorize_email(email_text),
+            cat_order,
+        )
 
-        # Step 3: Check if we have a learned pattern for this category
-        response_model_name = self._select_best_model_for(category)
-        response_model = self.models[response_model_name]
+        # Step 2: Check if we have a learned pattern for this category
+        # Step 3: Generate response — prefer free models
+        best_from_db = self.db.get_best_model_for_category(category)
+        resp_order = (
+            [best_from_db] if best_from_db and best_from_db in self.models and best_from_db not in self._sidelined
+            else []
+        ) + free_active + [p for p in active if p not in free_active]
 
-        # Step 4: Generate response
-        response, tokens_resp, time_resp = response_model.generate_response(email_text, category)
+        (response, tokens_resp, time_resp), response_model_name = self._call_with_fallback(
+            lambda pid: self.models[pid].generate_response(email_text, category),
+            resp_order,
+        )
 
-        # Step 5: Log everything
+        # Log and learn
         total_tokens = tokens_cat + tokens_resp
         total_time = time_cat + time_resp
 
@@ -59,7 +124,6 @@ class EmailTriage:
             processing_time=total_time
         )
 
-        # Step 6: Update learning pattern
         self.db.update_pattern(
             category=category,
             model_name=response_model_name,
@@ -75,54 +139,6 @@ class EmailTriage:
             'tokens_used': total_tokens,
             'processing_time': round(total_time, 2)
         }
-
-    def _get_reliable_model(self):
-        """
-        Get the most reliable available model for the categorization
-        (manager) step. A paid model is preferred here ONLY if one is
-        configured, since accuracy matters most for this decision;
-        otherwise the best free model is used so the whole pipeline
-        stays $0.
-        """
-        if self.paid_models:
-            # paid_models is built from self.models which preserves
-            # provider_id keys; pick the first paid one in priority order
-            for pid in self.priority_order:
-                if pid in self.paid_models:
-                    return pid
-        # No paid model configured (or none working) - use best free one
-        for pid in self.priority_order:
-            if pid in self.free_models:
-                return pid
-        # Fallback to whatever exists
-        return list(self.models.keys())[0]
-
-    def _select_best_model_for(self, category):
-        """
-        Select best model for a given category based on:
-        1. Learned patterns from database (if exists and still working)
-        2. Cheapest (free) available model first
-        3. Falls back to most reliable model
-
-        Over time, this gets smarter and cheaper.
-        """
-        # Check learned pattern first - only use it if that provider is
-        # still alive in this run (it was re-verified by health_check)
-        best_from_db = self.db.get_best_model_for_category(category)
-        if best_from_db and best_from_db in self.models:
-            return best_from_db
-
-        # No pattern yet - prefer free models, in priority order
-        for pid in self.priority_order:
-            if pid in self.free_models:
-                return pid
-
-        # No free models available - fall back to paid
-        for pid in self.priority_order:
-            if pid in self.models:
-                return pid
-
-        return list(self.models.keys())[0]
 
     def get_stats(self):
         """Get processing statistics"""

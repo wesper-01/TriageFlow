@@ -76,18 +76,23 @@ python triageflow.py
 
 ## 🔧 How Health Checking Works
 
-On startup, TriageFlow doesn't assume a model id works just because you have a key. It sends a real 1-token request to every candidate model for every provider you've configured, in priority order, and stops at the first one that responds successfully:
+On startup, TriageFlow doesn't assume a model id works just because you have a key. It sends a real 10-token request to every candidate model for every provider you've configured. It then **measures the latency** of each response and dynamically sorts the providers so that the fastest working model is always preferred:
 
 ```
 ======================================================================
   CHECKING AVAILABLE MODELS (pinging providers...)
 ======================================================================
-  [✓] Groq                 llama-3.1-8b-instant                    [FREE]
-  [✓] OpenRouter           nvidia/nemotron-3-super-120b-a12b:free  [FREE]
-  [-] Cerebras              not configured (no API key set)
   [x] Ollama (local)       no working model (Ollama not running locally)
+  [x] LM Studio (local)    no working model (connection refused (is it running?))
+  [-] Groq                 not configured (no API key set)
+  [OK] Cerebras             gemma-4-31b                              [FREE] (362ms)
+  [OK] OpenRouter           meta-llama/llama-3.3-70b-instruct:free  [FREE] (891ms)
+  [x] Google Gemini        no working model (HTTP 404: model not found)
+  [OK] NVIDIA (DeepSeek)    moonshotai/kimi-k2.6                     [PAID] (31204ms)
+  [-] OpenAI               not configured (no API key set)
+  [-] Claude (Anthropic)   not configured (no API key set)
 ----------------------------------------------------------------------
-  2 model(s) ready  (2 free, 0 paid)
+  3 model(s) ready  (2 free, 1 paid)
 ======================================================================
 ```
 
@@ -105,8 +110,9 @@ This is what prevents the classic "API Error 404 even though my key works" probl
 | Cerebras | Free | Hosted |
 | Ollama | $0 forever | Local |
 | LM Studio | $0 forever | Local |
-| Claude | Paid | Hosted (optional) |
-| OpenAI | Paid | Hosted (optional) |
+| Claude | Paid | Hosted (optional manager) |
+| OpenAI | Paid | Hosted (optional manager) |
+| NVIDIA NIM | Paid | Hosted (optional manager) |
 
 Adding a new provider is one entry in `providers.py` — no other code changes needed.
 
@@ -149,12 +155,11 @@ TriageFlow/
 ├── visualize.py         ← Terminal charts from results.csv
 ├── requirements.txt
 ├── .env.example
+├── QUICKSTART.md        ← Setup guide
+├── ARCHITECTURE.md      ← Deep dive into system design
 ├── data/
 │   ├── emails_sample.txt
 │   └── emails_1000.txt
-└── docs/
-    ├── QUICKSTART.md
-    └── ARCHITECTURE.md
 ```
 
 ---

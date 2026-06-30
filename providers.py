@@ -55,12 +55,12 @@ PROVIDERS = {
         "kind": "openai_compatible",
         "free": True,
         "models": [
-            "nvidia/nemotron-3-super-120b-a12b:free",
-            "meta-llama/llama-3.1-8b-instruct:free",
-            "mistralai/mistral-7b-instruct:free",
-            "google/gemma-2-9b-it:free",
-            "qwen/qwen-2-7b-instruct:free",
-            "microsoft/phi-3-mini-128k-instruct:free",
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "google/gemma-4-31b-it:free",
+            "qwen/qwen3-coder:free",
+            "meta-llama/llama-3.2-3b-instruct:free",
+            "openai/gpt-oss-120b:free",
+            "nvidia/nemotron-3-nano-30b-a3b:free"
         ],
         "notes": "Free models REQUIRE the ':free' suffix or you get 404s.",
         "extra_headers": {
@@ -89,7 +89,9 @@ PROVIDERS = {
         "kind": "openai_compatible",
         "free": True,
         "models": [
-            "llama3.1-8b",
+            "gemma-4-31b",
+            "gpt-oss-120b",
+            "zai-glm-4.7"
         ],
         "notes": "Free tier, extremely fast inference.",
     },
@@ -143,6 +145,20 @@ PROVIDERS = {
         "models": ["gpt-4o-mini", "gpt-3.5-turbo"],
         "notes": "Optional premium tier.",
     },
+
+    "nvidia": {
+        "label": "NVIDIA (DeepSeek)",
+        "env_key": "NVIDIA_API_KEY",
+        "base_url": "https://integrate.api.nvidia.com/v1",
+        "kind": "openai_compatible",
+        "free": False,
+        "models": [
+            "deepseek-ai/deepseek-v4-flash",
+            "google/gemma-4-31b-it",
+            "moonshotai/kimi-k2.6",
+            "qwen/qwen3.5-122b-a10b"
+        ],"notes": "Added via Nvidia integrate API.",
+    },
 }
 
 # Order in which we prefer to use providers when multiple are available
@@ -152,7 +168,7 @@ DEFAULT_PRIORITY = [
     "ollama", "lmstudio",          # local, unlimited, $0
     "groq", "cerebras",            # hosted free, very fast
     "openrouter", "gemini",        # hosted free, slower / stricter limits
-    "openai", "claude",            # paid, last resort / manager tier
+    "nvidia", "openai", "claude",  # paid/custom, last resort / manager tier
 ]
 
 
