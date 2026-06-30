@@ -1,0 +1,200 @@
+================================================================================
+                    TRIAGEFLOW STRESS TEST PROMPT
+                Generate 1000+ Realistic Support Emails
+================================================================================
+
+SYSTEM PROMPT:
+You are a support email generator for a SaaS company. Generate diverse, realistic 
+support emails across these 5 categories:
+
+1. BILLING: Payment issues, invoicing, subscription problems
+2. TECHNICAL: Bugs, errors, API issues, integration problems
+3. FEATURE_REQUEST: User feature requests and suggestions
+4. FEEDBACK: Positive/negative feedback about the product
+5. GENERAL_INQUIRY: General questions about the product
+
+================================================================================
+                           GENERATION TASK
+================================================================================
+
+Generate exactly 1000 UNIQUE support emails. 
+
+Requirements:
+- 200 emails per category (200 x 5 = 1000 total)
+- Each email should be realistic and varied in tone/length
+- Vary from short (1-2 sentences) to long (3-5 sentences)
+- Mix professional, casual, frustrated, and grateful tones
+- Use different writing styles and concerns
+- Include real-world company names, product features, error messages
+- NO duplicates - every email should be unique
+- One email per line, no numbering, no formatting
+- Each email should be 1-3 sentences max
+- Mix of generic and specific problems
+
+================================================================================
+                        BILLINGS EXAMPLES (200)
+================================================================================
+
+Start generating 200 UNIQUE billing-related emails:
+- Charged twice
+- Wrong amount charged
+- Can't update payment method
+- Subscription renewal issue
+- Invoice not received
+- Price increase question
+- Billing address issue
+- Currency conversion problem
+- Refund request
+- Missing discount code application
+- Free trial not activated
+- Payment method declined
+- Multiple charges for one order
+- How to cancel subscription
+- Downgrade tier
+- Missing billing email
+- Can't find receipt
+- Tax charge question
+- Payment confirmation not received
+- Billing cycle confusion
+
+[Generate 200 realistic variations - mix lengths, tones, specific scenarios]
+
+================================================================================
+                       TECHNICAL EXAMPLES (200)
+================================================================================
+
+Start generating 200 UNIQUE technical-related emails:
+- API rate limiting issue
+- Webhook not working
+- Login error
+- Page not loading
+- Integration broken
+- Error 500 on certain endpoint
+- Data export failing
+- Import timeout
+- SSL certificate error
+- Database connection error
+- File upload size limit
+- Sync not working
+- Cache not clearing
+- Permission denied error
+- Token expired message
+- API documentation unclear
+- Webhook signature invalid
+- Rate limit too low
+- Slow performance issue
+- Cannot connect to database
+
+[Generate 200 realistic variations - include error codes, API details, stack traces]
+
+================================================================================
+                     FEATURE_REQUEST EXAMPLES (200)
+================================================================================
+
+Start generating 200 UNIQUE feature request emails:
+- Dark mode request
+- Export to CSV
+- Bulk operations
+- Custom reporting
+- API rate increase
+- Two-factor authentication
+- Single sign-on
+- Mobile app
+- Advanced filtering
+- Custom webhooks
+- Scheduled reports
+- Team collaboration features
+- API versioning
+- Webhook retries
+- Custom branding
+- Role-based access control
+- Audit logs
+- Advanced search
+- Workflow automation
+- Custom fields
+
+[Generate 200 realistic variations - explain use cases, business value]
+
+================================================================================
+                       FEEDBACK EXAMPLES (200)
+================================================================================
+
+Start generating 200 UNIQUE feedback emails:
+POSITIVE:
+- Love the new UI
+- Great customer support
+- Saves us time
+- Best product in market
+- Easy to use
+- Highly recommended
+- Worth the money
+- Amazing documentation
+- Quick onboarding
+- Responsive support team
+
+NEGATIVE:
+- Confusing interface
+- Missing features we need
+- Too expensive
+- Slow performance
+- Poor documentation
+- Bad customer support
+- Integration incomplete
+- Lacks customization
+- Not ready for enterprise
+- Competitor is better
+
+[Generate 200 realistic variations - mix positive and negative, be specific]
+
+================================================================================
+                    GENERAL_INQUIRY EXAMPLES (200)
+================================================================================
+
+Start generating 200 UNIQUE general inquiry emails:
+- How to get started
+- Pricing question
+- Security question
+- Compliance/SOC2
+- Data retention policy
+- Uptime guarantee
+- Support hours
+- Training available
+- Demo request
+- Account recovery
+- Password reset
+- Two-factor auth setup
+- Team member invite
+- Billing history
+- Usage statistics
+- API documentation
+- Webhook documentation
+- Sample integrations
+- Status page
+- Roadmap questions
+
+[Generate 200 realistic variations - real company use cases]
+
+================================================================================
+                         OUTPUT FORMAT
+================================================================================
+
+Generate EXACTLY 1000 emails.
+One per line.
+No numbering.
+No category tags.
+Just the raw email text.
+
+Example:
+I've been trying to reset my password for 2 hours and keep getting an error.
+Our team needs dark mode urgently - we work mostly at night.
+Your support team fixed our issue in 10 minutes, amazing service!
+[continue for 1000 total]
+
+================================================================================
+                         START GENERATION
+================================================================================
+
+Generate all 1000 unique support emails now. This is for stress testing, so 
+make them as realistic and varied as possible.
+
+OUTPUT: (1000 unique emails, one per line)
