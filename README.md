@@ -164,6 +164,21 @@ TriageFlow/
 
 ---
 
+## 🔜 Roadmap
+
+### Gmail Integration *(in progress)*
+
+Real inbox support is the next milestone. The plan:
+
+- Connect to a Gmail inbox via the Gmail API (OAuth2)
+- Read unread emails and run them through the triage engine
+- **Save replies as drafts** — never auto-sends, so a human always reviews before anything goes out
+- Flag emails that need human attention (e.g. billing disputes, critical bugs) with a `[NEEDS HUMAN REVIEW]` header in the draft
+
+> **Status:** Gmail API credentials setup + `gmail.py` integration module coming soon. The routing engine is ready — just needs the inbox pipe connected.
+
+---
+
 ## 📝 License
 
 MIT — free to use, modify, and build on.
