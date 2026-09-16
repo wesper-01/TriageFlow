@@ -175,7 +175,8 @@ Real inbox support is the next milestone. The plan:
 - **Save replies as drafts** — never auto-sends, so a human always reviews before anything goes out
 - Flag emails that need human attention (e.g. billing disputes, critical bugs) with a `[NEEDS HUMAN REVIEW]` header in the draft
 
-> **Status:** Gmail API credentials setup + `gmail.py` integration module coming soon. The routing engine is ready — just needs the inbox pipe connected.
+Status: Core routing and provider-selection logic implemented. Gmail integration is the next development milestone. Development was temporarily interrupted due to loss of development hardware.
+
 
 ---
 
