@@ -1,6 +1,6 @@
 # TriageFlow
 
-**Free, open-source AI email triage. No required API costs. No guessing which model works — TriageFlow pings every provider live and only uses what's actually working.**
+**Free, open-source AI email triage. No required API costs. No guessing which model works TriageFlow pings every provider live and only uses what's actually working.**
 
 ---
 
