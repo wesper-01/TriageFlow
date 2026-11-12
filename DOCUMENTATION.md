@@ -3,8 +3,9 @@
 | | |
 | --- | --- |
 | **Status** | Paused |
-| **Last updated** | November 2026 |
+| **Last tested** | July 2026 |
 | **Tested on** | A 1,000-email sample batch, and Hermes Agent on a server with real emails |
+| **Document updated** | November 2026 |
 | **Verdict** | The framework works, but it is not reliable enough to deploy on free-tier APIs |
 
 This document records what testing showed, what went wrong, why development is paused, and what a restart would need.
