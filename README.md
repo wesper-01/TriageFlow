@@ -1,191 +1,116 @@
-# TriageFlow
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/hero-dark.webp">
+  <img src="docs/hero-light.webp" alt="TriageFlow. Every support email, sorted and answered. Five real support emails flow from an inbox into the TriageFlow router, which picked Cerebras gemma-4-31b at 362 ms, and out into five categories, each with a reply drafted: billing, technical, feature request, feedback and general inquiry.">
+</picture>
 
-**Free, open-source AI email triage. No required API costs. No guessing which model works TriageFlow pings every provider live and only uses what's actually working.**
+<p align="center">
+  <a href="#quick-start"><b>Quick start</b></a>
+  &nbsp;·&nbsp;
+  <a href="#how-it-works">How it works</a>
+  &nbsp;·&nbsp;
+  <a href="#supported-providers">Providers</a>
+  &nbsp;·&nbsp;
+  <a href="DOCUMENTATION.md">Documentation</a>
+</p>
 
----
+Support inboxes are mostly the same five kinds of email, and every one needs sorting and a first reply before a person even looks at it. TriageFlow does both. It reads each email, puts it in the right category and drafts a short, polite answer, using AI models that cost nothing to run.
 
-## ⚡ How It Works
+It's free and open source. Bring one free API key (Groq, OpenRouter, Gemini or Cerebras), or none at all with a local model through Ollama or LM Studio. Paid models such as Claude and OpenAI are supported but never required.
 
-```
-Your email
-    ↓
-[Health Check] Pings every configured AI provider with a real test call
-    ↓
-[Manager] Best available model: categorize the email
-    ↓
-[Worker] Cheapest/free working model: generate a response
-    ↓
-Categorized email + response, at $0 cost (if using free tier)
-```
+## See it run
 
----
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/terminal-dark.webp">
+  <img src="docs/terminal-light.webp" alt="An example terminal session of python triageflow.py. The health check finds Cerebras gemma-4-31b at 362 ms and OpenRouter llama-3.3-70b-instruct:free at 891 ms, both free. Five emails are categorized as billing, technical, feature request, feedback and general inquiry, each with a drafted reply, for a total cost of $0.">
+</picture>
 
-## 🎯 Why TriageFlow
+One command checks which models are live, then sorts and answers every email you give it. The total at the bottom is the point: **$0**. *(Example session. The models and latencies are from a real health check run.)*
 
-Most "AI cost optimizer" tools assume you're already paying for a premium API. TriageFlow doesn't.
+## Why TriageFlow
 
-- **Free by default.** Routes to free-tier providers (Groq, OpenRouter, Gemini, Cerebras) or 100% local models (Ollama, LM Studio) first. Paid APIs (Claude, OpenAI) are optional, used only if you add a key.
-- **No silent failures.** Before processing anything, TriageFlow pings every provider you've configured with a real request. If a model id is wrong, deprecated, or rate-limited, you're told immediately — not after burning through a batch of emails.
-- **Anyone can run it.** No credit card required. Works for a solo developer testing locally just as well as a team with premium API access.
+- **Free by default.** Local and free-tier models are always tried first. Paid APIs are used only if you add a key.
+- **No silent failures.** Before touching a single email, TriageFlow sends a real request to every model you've configured. A wrong, retired or rate-limited model ID shows up straight away, not halfway through your inbox.
+- **Always the fastest model.** Working models are ranked by how quickly they answered, and the fastest one gets the work.
+- **Keeps going on its own.** If a provider stops answering mid-run, TriageFlow sets it aside and moves to the next one.
+- **Gets smarter with use.** Every result is stored locally, and future emails in each category go to the model that has handled that category best.
+- **Easy to extend.** Adding a provider is one entry in `providers.py`.
 
----
+## Five categories
 
-## 🚀 Quick Start (5 Minutes)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/categories-dark.webp">
+  <img src="docs/categories-light.webp" alt="The five categories, each with a real example email: billing (a refund after a renewal), technical (API 500 errors), feature request (bulk CSV export), feedback (praise for the product) and general inquiry (a Zapier integration question).">
+</picture>
 
-### 1. Clone & Setup
+Every email lands in exactly one of these, and each one gets a reply written for its category. The examples above come from the sample set in `data/`.
+
+## How it works
+
+1. **Health check.** Every configured provider gets a short real request. Only models that answer are used, ranked fastest first.
+2. **Categorize.** The strongest available model reads the email and picks one of the five categories.
+3. **Reply.** The cheapest working model drafts an answer of under 100 words, in the right tone for the category.
+4. **Learn.** The result is saved to a local SQLite database, and the model that handled the category best gets the next email of that kind.
+
+[ARCHITECTURE.md](ARCHITECTURE.md) explains each part in detail.
+
+## Quick start
+
+You need Python 3.9 or newer.
 
 ```bash
 git clone https://github.com/wesper-01/TriageFlow.git
 cd TriageFlow
-python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
+python -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+cp .env.example .env                              # add one free key, or run Ollama
 ```
 
-### 2. Get a Free API Key (pick ONE)
+| Command | What it does |
+| --- | --- |
+| `python health_check.py` | Checks every configured provider and lists the ones that answer, fastest first. |
+| `python triageflow.py` | Triages emails you paste in, one per line, and prints each category and reply. |
+| `python test.py` | Runs the 1,000-email sample batch and saves the results to `results.csv`. |
+| `python visualize.py` | Draws terminal charts from `results.csv`. |
 
-| Provider | Free tier | Get a key |
-|---|---|---|
-| **Groq** | Generous, no card | https://console.groq.com/keys |
-| **OpenRouter** | Free models available | https://openrouter.ai/keys |
-| **Google Gemini** | Free with daily limits | https://aistudio.google.com/apikey |
-| **Cerebras** | Free, very fast | https://cloud.cerebras.ai/ |
-| **Ollama (local)** | 100% free, no key | https://ollama.ai |
+[QUICKSTART.md](QUICKSTART.md) walks through setup step by step.
 
-### 3. Configure
+## Supported providers
 
-```bash
-cp .env.example .env
-# paste your key into .env
-```
+| Provider | Cost | Runs | Get a key |
+| --- | --- | --- | --- |
+| Ollama | Free | On your machine | [ollama.com](https://ollama.com) |
+| LM Studio | Free | On your machine | [lmstudio.ai](https://lmstudio.ai) |
+| Groq | Free tier | Hosted | [console.groq.com](https://console.groq.com/keys) |
+| OpenRouter | Free models | Hosted | [openrouter.ai](https://openrouter.ai/keys) |
+| Google Gemini | Free tier | Hosted | [aistudio.google.com](https://aistudio.google.com/apikey) |
+| Cerebras | Free tier | Hosted | [cloud.cerebras.ai](https://cloud.cerebras.ai/) |
+| Claude | Paid, optional | Hosted | [console.anthropic.com](https://console.anthropic.com/) |
+| OpenAI | Paid, optional | Hosted | [platform.openai.com](https://platform.openai.com/api-keys) |
+| NVIDIA NIM | Paid, optional | Hosted | [build.nvidia.com](https://build.nvidia.com/) |
 
-### 4. Run
+## Project structure
 
-```bash
-# Check which providers are actually working right now
-python health_check.py
+| Path | What it is |
+| --- | --- |
+| `triageflow.py` | The main entry point. |
+| `providers.py` | Every provider and its candidate model IDs. Add new ones here. |
+| `health_check.py` | The live check that runs before any email is processed. |
+| `models.py` | One interface for calling any provider. |
+| `triage.py` | Routing, fallback and learning. |
+| `database.py` | Local SQLite storage for results and learned patterns. |
+| `test.py`, `visualize.py` | The 1,000-email batch runner and its charts. |
+| `data/` | Sample email sets. |
 
-# Test with 1000 sample emails
-python test.py
+## Roadmap
 
-# Or process your own emails interactively
-python triageflow.py
-```
+- **Gmail integration.** Read unread mail through the Gmail API, triage it, and save each reply as a draft for a person to review. Nothing is ever sent automatically.
+- **Outlook and IMAP** after Gmail.
+- **Hermes Agent support,** so TriageFlow can run as an always-on agent on a server. It has already been tested this way, with real emails.
 
----
+## Project status
 
-## 🔧 How Health Checking Works
+Development is paused. TriageFlow does everything described above, and it was tested on the full 1,000-email set and on a Hermes Agent server. Running it every day on free-tier APIs, though, turned out to depend on rate limits and response times that no code can control. The **[documentation](DOCUMENTATION.md)** covers what testing showed, why I paused it and what it would take to pick it back up.
 
-On startup, TriageFlow doesn't assume a model id works just because you have a key. It sends a real 10-token request to every candidate model for every provider you've configured. It then **measures the latency** of each response and dynamically sorts the providers so that the fastest working model is always preferred:
+## Licence
 
-```
-======================================================================
-  CHECKING AVAILABLE MODELS (pinging providers...)
-======================================================================
-  [x] Ollama (local)       no working model (Ollama not running locally)
-  [x] LM Studio (local)    no working model (connection refused (is it running?))
-  [-] Groq                 not configured (no API key set)
-  [OK] Cerebras             gemma-4-31b                              [FREE] (362ms)
-  [OK] OpenRouter           meta-llama/llama-3.3-70b-instruct:free  [FREE] (891ms)
-  [x] Google Gemini        no working model (HTTP 404: model not found)
-  [OK] NVIDIA (DeepSeek)    moonshotai/kimi-k2.6                     [PAID] (31204ms)
-  [-] OpenAI               not configured (no API key set)
-  [-] Claude (Anthropic)   not configured (no API key set)
-----------------------------------------------------------------------
-  3 model(s) ready  (2 free, 1 paid)
-======================================================================
-```
-
-This is what prevents the classic "API Error 404 even though my key works" problem — that's almost always a wrong/deprecated model id, not a bad key, and now you find out before processing any real data.
-
----
-
-## 🤖 Supported Providers
-
-| Provider | Cost | Type |
-|---|---|---|
-| Groq | Free | Hosted |
-| OpenRouter | Free (`:free` models) | Hosted |
-| Google Gemini | Free tier | Hosted |
-| Cerebras | Free | Hosted |
-| Ollama | $0 forever | Local |
-| LM Studio | $0 forever | Local |
-| Claude | Paid | Hosted (optional manager) |
-| OpenAI | Paid | Hosted (optional manager) |
-| NVIDIA NIM | Paid | Hosted (optional manager) |
-
-Adding a new provider is one entry in `providers.py` — no other code changes needed.
-
----
-
-## 🏗️ Architecture
-
-```
-triageflow.py / test.py
-    │
-    ├─ health_check.py   → pings every configured provider, returns only working ones
-    │     └─ providers.py → registry of providers + their known-good model ids
-    │
-    ├─ models.py          → uniform interface to call any provider (TriageModel)
-    │
-    ├─ triage.py           → routing logic: free models first, learns patterns over time
-    │
-    └─ database.py        → SQLite: logs results, learns which model works best per category
-```
-
----
-
-## 📊 What Gets Learned
-
-As TriageFlow processes more emails, `database.py` tracks which model performs best for each category (BILLING, TECHNICAL, FEATURE_REQUEST, FEEDBACK, GENERAL_INQUIRY) and routes future emails of that type straight to it — skipping the trial-and-error on subsequent runs.
-
----
-
-## 📁 Project Structure
-
-```
-TriageFlow/
-├── triageflow.py        ← Main entry point
-├── providers.py         ← Provider/model registry
-├── health_check.py      ← Live ping/verification
-├── models.py            ← Unified API wrapper
-├── triage.py            ← Routing + learning logic
-├── database.py          ← SQLite persistence
-├── test.py              ← Bulk test runner (1000 emails)
-├── visualize.py         ← Terminal charts from results.csv
-├── requirements.txt
-├── .env.example
-├── QUICKSTART.md        ← Setup guide
-├── ARCHITECTURE.md      ← Deep dive into system design
-├── data/
-│   ├── emails_sample.txt
-│   └── emails_1000.txt
-```
-
----
-
-## 🔜 Roadmap
-
-### Gmail Integration *(in progress)*
-
-Real inbox support is the next milestone. The plan:
-
-- Connect to a Gmail inbox via the Gmail API (OAuth2)
-- Read unread emails and run them through the triage engine
-- **Save replies as drafts** — never auto-sends, so a human always reviews before anything goes out
-- Flag emails that need human attention (e.g. billing disputes, critical bugs) with a `[NEEDS HUMAN REVIEW]` header in the draft
-
-Status: Core routing and provider-selection logic implemented. Gmail integration is the next development milestone. Development was temporarily interrupted due to loss of development hardware.
-
-
----
-
-## 📝 License
-
-MIT — free to use, modify, and build on.
-
----
-
-## 🤝 Contributing
-
-This is meant to be a genuinely useful free tool, not a paid product wrapper. PRs adding new free-tier providers, fixing model ids that have gone stale, or improving the learning logic are welcome.
+MIT, see [LICENSE](LICENSE). Contributions are welcome, especially new free-tier providers and updates to model IDs that have changed. Icons are from Lucide (ISC). Fonts are Geist and Geist Mono (SIL OFL 1.1).
