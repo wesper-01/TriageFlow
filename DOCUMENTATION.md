@@ -6,7 +6,7 @@
 
 This documentation explains what went wrong with TriageFlow, why I decided to stop rather than keep patching it, and where I'd take it if I came back to it.
 
-The short version: **TriageFlow didn't fail because the idea or the core logic was wrong. It failed because the thing it was built on, free-tier AI APIs, isn't reliable enough to build a working product on.** Testing showed the framework works: a 1,000-email run completed, and providers switched automatically when one failed. A live setup with Hermes Agent on a server also worked. But both depended on free APIs that kept hitting rate limits and latency spikes, so instead of being reliable the system became a nightmare to run. It worked, but it can't be sustained or relied on.
+The short version: **the framework works, but it is not reliable enough to deploy on free-tier APIs.** Testing showed the core logic holds up: a 1,000-email run completed, and a live setup with Hermes Agent on a server triaged real emails. But both depended on free APIs that kept hitting rate limits and latency spikes, which made the system too unstable to operate. I also found a bug in my own error handling that made those API failures worse (section 3.4). I stopped rather than keep patching.
 
 ---
 
@@ -21,7 +21,7 @@ A free, open-source email triage tool:
 
 The core promise was **$0 cost**: run entirely on free tiers (Groq, OpenRouter, Gemini, Cerebras) or local models (Ollama, LM Studio).
 
-That promise is exactly what broke it.
+That promise is what made it unreliable.
 
 ---
 
@@ -33,19 +33,21 @@ I tested TriageFlow in two ways.
 
 I ran the full pipeline (`test.py`) on a 1,000-email sample dataset.
 
-- **What worked:** the framework did its job. Emails were categorized and answered, and when a provider failed, the router **switched to another model automatically**, as designed.
-- **What didn't:** the providers **kept hitting rate limits**, and latency spikes stacked up. Requests waited so long that they ran into **request queue time limits**: calls timed out while waiting, not because the model was wrong. Model switching kept the run going, but most of the effort went into recovering from provider failures instead of triaging emails.
+- **What worked:** the run completed. Emails were categorized and answered, and failover worked for hard failures: when a provider was down or returned an error that was surfaced, the next provider took over automatically.
+- **What didn't:** failover did not work for errors that were masked as a normal result (see section 3.4). Rate limits, latency spikes and queue timeouts dominated the run. Requests waited so long that they ran into **request queue time limits**: calls timed out while waiting, not because the model was wrong. Most of the effort went into recovering from provider failures instead of triaging emails.
+
+**Measurements.** I did not record exact figures for the 1,000-email run (count of HTTP 429 responses, timeouts or total runtime). The only measured latencies come from a single health check, where responses ranged from about 360 ms to about 31,000 ms across providers. That is one measurement, not an average.
 
 ### 2.2 Live test: Hermes Agent on a server
 
 I also ran **Hermes Agent hosted on a server** and sent real emails to it to check the framework end to end in a realistic setup.
 
-- **What worked:** it ran, and the results were alright. The agent received emails, the triage logic ran, and it produced sensible output.
+- **What worked:** it ran, and the results were acceptable. The agent received emails, the triage logic ran, and it produced sensible output.
 - **What didn't:** it had the same weakness underneath. Every step still went through the same free-tier APIs, so the same rate limits and latency showed up. It proved the idea can work in practice, but not that it can run day after day.
 
 ### 2.3 Verdict
 
-**The framework works. It isn't sustainable or reliable.** The logic holds up; the free API layer under it doesn't. A tool that only works when the providers are having a good day isn't something anyone can depend on, least of all for email.
+**The framework works, but it is not reliable enough to deploy on free-tier APIs.** The logic holds up; the free API layer under it doesn't. A tool that only works when the providers are having a good day isn't something anyone can depend on, least of all for email.
 
 ---
 
@@ -53,7 +55,7 @@ I also ran **Hermes Agent hosted on a server** and sent real emails to it to che
 
 ### 3.1 Latency: unpredictable, sometimes extreme
 
-Free-tier response times weren't just slow. They were **inconsistent**. The same provider could answer in a few hundred milliseconds and then take 30+ seconds on the next call. One health check run showed responses ranging from about 360 ms to about 31,000 ms across providers.
+Free-tier response times weren't just slow. They were **inconsistent**. The same provider could answer in a few hundred milliseconds and then take 30+ seconds on the next call. In one health check, responses ranged from about 360 ms to about 31,000 ms across providers (a single measurement, not an average).
 
 Every email needs **two sequential calls** (categorize, then respond), and each call has a 25-second timeout (`TRIAGEFLOW_TIMEOUT` in `models.py`). With fallback across providers and up to 3 retry rounds (`triage.py`), one bad email could stall the pipeline for minutes. In the 1,000-email test, this is what caused requests to run into queue time limits: the requests themselves were fine, they just waited too long. Over a 1,000-email batch that's not a slowdown. The tool becomes unusable.
 
@@ -71,13 +73,13 @@ On top of that, free-tier model IDs change constantly. Models get deprecated, re
 
 ### 3.4 The failures cascaded into the logic
 
-This is the part that made the whole framework "fall apart" instead of just running slower:
+This is the part that made the whole framework break down instead of just running slower:
 
-- **Silent misclassification.** In `models.py`, `categorize_email()` turns any response that isn't a known category into `GENERAL_INQUIRY`. When a provider returns an error like `API Error 429`, that also becomes `GENERAL_INQUIRY`. The fallback logic in `triage.py` then sees a "valid" category and never tries another provider. API failures quietly turn into wrong results.
+- **Silent misclassification (a bug in my code).** In `models.py`, `categorize_email()` turns any response that isn't a known category into `GENERAL_INQUIRY`. When a provider returns an error like `API Error 429`, that also becomes `GENERAL_INQUIRY`. The fallback logic in `triage.py` then sees a "valid" category and never tries another provider. API failures quietly turn into wrong results.
 - **Poisoned learning.** `database.py` learns which model is best per category from processing time and tokens. When latency is driven by provider load rather than model quality, and categories are skewed by masked errors, the learned patterns reflect API noise, not real performance.
-- **Unstable routing.** Providers get sidelined after 3 consecutive failures, then un-sidelined on retry, then fail again. Under real free-tier conditions the router spent more effort shuffling between unreliable providers than doing triage.
+- **Unstable routing.** Providers get sidelined after 3 consecutive failures, then restored to the active pool on retry, then fail again. Under real free-tier conditions the router spent more effort shuffling between unreliable providers than doing triage.
 
-None of these are bugs in the usual sense. Each piece works on its own. But they all assumed the API layer would be *mostly* reliable, and on free tiers it isn't.
+The first one is a bug in my code: API errors were silently classified as `GENERAL_INQUIRY`. That stopped fallback from triggering and wrote wrong categories into the learning data, so routing became unstable. The other two are design weaknesses: they assumed the API layer would be *mostly* reliable, and on free tiers it isn't.
 
 ---
 
@@ -85,12 +87,12 @@ None of these are bugs in the usual sense. Each piece works on its own. But they
 
 I could have kept going: added exponential backoff, read `Retry-After` headers, added more providers, cached results, rate-limited myself. Some of that is worth doing. But I decided to stop because:
 
-1. **The bottleneck isn't in my code.** Latency, quotas and uptime belong to the providers. Every hour spent working around them is spent on symptoms, not on the product.
+1. **The main bottleneck isn't in my code.** Latency, quotas and uptime belong to the providers. The masked-error bug is mine and fixable, but fixing it doesn't make free APIs faster or more available. Every hour spent working around them is spent on symptoms, not on the product.
 2. **"Free" and "reliable" pulled in opposite directions.** Making it reliable means paid APIs or capable local hardware. Both break the original $0, runs-anywhere promise. That's a design decision to make deliberately, not something to drift into by patching.
 3. **The next features would have made it worse.** The roadmap had Gmail integration next. Connecting a real inbox to a pipeline that silently misclassifies emails when an API hiccups would be worse than having no integration. An email tool that's wrong *quietly* isn't safe to point at real mail.
 4. **Building more on an unstable base only adds complexity.** Every new feature would inherit the same unreliability and multiply the ways it can fail.
 
-So TriageFlow is **unoptimized and not functional in practice yet**, but not a failure. It proved the architecture (live health checks, cost-aware routing, per-category learning) and showed exactly where the limit is.
+**Verdict:** the framework works, but it is not reliable enough to deploy on free-tier APIs. I stopped rather than keep patching. The architecture (live health checks, cost-aware routing, per-category learning) is sound, and the testing showed exactly where the limit is.
 
 ---
 
@@ -109,7 +111,7 @@ Instead of hand-rolling every piece (tool calls, retries, memory, scheduling), t
 - **Hermes Agent**: my preferred direction, and **already tested**. I ran it on a server and sent emails to it (see section 2.2). It worked.
 - **OpenClaw**: considered as an alternative.
 
-**Why Hermes is my vision:** for a tool that reads someone's inbox, security matters more than anything else. From what I've seen, Hermes has had far fewer security problems than OpenClaw, which has had a range of publicly reported issues. An email agent handles private data and processes untrusted input (any stranger can send you an email). I want the harness with the smaller attack surface and the cleaner track record, even if it means fewer features.
+**Why I prefer Hermes:** for a tool that reads someone's inbox, security matters more than anything else. An email agent handles private data and processes untrusted input (any stranger can send you an email). I prefer Hermes over OpenClaw for security reasons, but this is my current understanding: I have not audited or independently verified the security of either.
 
 The server test confirmed something important: **a harness doesn't fix the API problem by itself.** Hermes ran fine, but an agent built on unreliable free endpoints is just as unreliable as the endpoints. That's why the integration is on hold together with everything else, not instead of it.
 
@@ -129,10 +131,10 @@ If I pick TriageFlow back up, these are the prerequisites, roughly in order:
 
 ## 7. Takeaways
 
-- **"It works" and "it's reliable" are different things.** Both tests passed functionally. Neither setup could be run sustainably.
+- **"It works" and "it's reliable" are different things.** Both tests completed, but with timeouts, rate-limit errors and queue failures, so neither showed reliable operation.
 - **Check your dependencies before building features on them.** The health check was a good instinct; it should have tracked provider health continuously, not just once at startup.
 - **"Free" has a cost.** It's paid in latency, quotas and maintenance instead of money.
-- **Silent fallbacks are dangerous.** Turning errors into a default value made failures invisible, which is worse than a crash.
+- **Silent fallbacks are dangerous.** My code turned errors into a default category, which made failures invisible. That is worse than a crash.
 - **Stopping is a valid engineering decision.** Pausing a project whose foundation isn't ready is better than shipping something that looks like it works and doesn't.
 
 The code stays public under the MIT license. Anyone is welcome to fork it, learn from it, or run it on a more dependable backend.

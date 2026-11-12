@@ -183,7 +183,7 @@ With: "support emails for a payment processing service"
 
 During stress test, monitor:
 
-1. **Token Reduction** — Should see 70-80% reduction
+1. **Token Usage** — Compare total tokens across runs (no reduction figure has been measured yet)
 2. **Learning Curve** — First 20 emails use premium model, then optimize
 3. **Category Distribution** — Should be 200 emails per category
 4. **Model Usage** — Should see mix of premium and free models

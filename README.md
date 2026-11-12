@@ -13,7 +13,7 @@
   <a href="DOCUMENTATION.md">Documentation</a>
 </p>
 
-Support inboxes are mostly the same five kinds of email, and every one needs sorting and a first reply before a person even looks at it. TriageFlow does both. It reads each email, puts it in the right category and drafts a short, polite answer, using AI models that cost nothing to run.
+Support inboxes are mostly the same five kinds of email, and every one needs sorting and a first reply before a person even looks at it. TriageFlow does both. It reads each email, puts it in the right category and drafts a short, polite answer, using AI models that can cost nothing to run.
 
 It's free and open source. Bring one free API key (Groq, OpenRouter, Gemini or Cerebras), or none at all with a local model through Ollama or LM Studio. Paid models such as Claude and OpenAI are supported but never required.
 
@@ -24,7 +24,7 @@ It's free and open source. Bring one free API key (Groq, OpenRouter, Gemini or C
   <img src="docs/terminal-light.webp" alt="An example terminal session of python triageflow.py. The health check finds Cerebras gemma-4-31b at 362 ms and OpenRouter llama-3.3-70b-instruct:free at 891 ms, both free. Five emails are categorized as billing, technical, feature request, feedback and general inquiry, each with a drafted reply, for a total cost of $0.">
 </picture>
 
-One command checks which models are live, then sorts and answers every email you give it. The total at the bottom is the point: **$0**. *(Example session. The models and latencies are from a real health check run.)*
+One command checks which models are live, then sorts and answers every email you give it. The total at the bottom is the point: **$0** when only free providers are configured. *(Example session. The models and latencies are from a real health check run.)*
 
 ## Why TriageFlow
 
