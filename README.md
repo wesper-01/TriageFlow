@@ -13,6 +13,8 @@
   <a href="DOCUMENTATION.md">Documentation</a>
 </p>
 
+> **Status: paused.** Everything described here works and was tested, but I'm not developing it right now. [Why, and what it would take to resume](#project-status).
+
 Support inboxes are mostly the same five kinds of email, and every one needs sorting and a first reply before a person even looks at it. TriageFlow does both. It reads each email, puts it in the right category and drafts a short, polite answer, using AI models that can cost nothing to run.
 
 It's free and open source. Bring one free API key (Groq, OpenRouter, Gemini or Cerebras), or none at all with a local model through Ollama or LM Studio. Paid models such as Claude and OpenAI are supported but never required.
@@ -101,7 +103,7 @@ cp .env.example .env                              # add one free key, or run Oll
 | `test.py`, `visualize.py` | The 1,000-email batch runner and its charts. |
 | `data/` | Sample email sets. |
 
-## Roadmap
+## If I pick it back up
 
 - **Gmail integration.** Read unread mail through the Gmail API, triage it, and save each reply as a draft for a person to review. Nothing is ever sent automatically.
 - **Outlook and IMAP** after Gmail.
